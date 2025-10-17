@@ -35,13 +35,13 @@ jobs:
 
     - name: 更新安装feed
       run: |
-        cd openwrt
+        cd imm
         ./scripts/feeds update -a
         ./scripts/feeds install -a
       
     - name: 恢复配置文件
       run: |
-        cd openwrt
+        cd imm
         # 生成默认配置，确保基于目标设备
         make defconfig
         # 应用 diffconfig（包选择等）
@@ -58,6 +58,17 @@ jobs:
           cp -r ../files .
         fi
 
+
+    - name: 更改内核配置
+      run: |
+        cd imm
+        # 生成默认配置，确保基于目标设备
+        make defconfig
+        # 应用 diffconfig（包选择等）
+        if [ -f ../config-6.12 ]; then
+           cat ../kconfig >> target/linux/rockchip/armv8/config-6.12
+        fi
+  
     - name: 下载依赖
       run: |
         cd imm
