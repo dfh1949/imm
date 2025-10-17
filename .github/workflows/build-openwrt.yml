@@ -40,7 +40,7 @@ jobs:
 
     - name: Clone OpenWrt source
       run: |
-        git clone -b master--single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt.git openwrt
+        git clone --depth=1 --branch master https://github.com/immortalwrt/immortalwrt.git openwrt
         cd openwrt
 
     - name: Update and install feeds
