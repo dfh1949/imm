@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 360  # 新增：job 总超时 6 小时，防长时构建卡死
     if: github.actor == 'dfh1949'
 
     steps:
@@ -87,11 +88,17 @@ jobs:
         fi
 
     - name: 下载依赖
+      timeout-minutes: 60  # 新增：步骤超时 1 小时，防单文件卡死
       run: |
         cd openwrt
-        make download prepare -j$(nproc) V=s
+        # 新增：设置 wget 参数，重试机制解决连接失败
+        export WGET_FLAGS="--tries=3 --timeout=30 --retry-connrefused --waitretry=5 --read-timeout=30"
+        # 分离下载和 prepare，先下载（带 V=s 看日志），失败重试一次
+        make download V=s || make download V=s
+        make prepare -j$(nproc) V=s
 
     - name: 编译
+      timeout-minutes: 180  # 新增：编译步骤超时 3 小时
       run: |
         cd openwrt
         make -j$(nproc) V=s
