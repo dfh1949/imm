@@ -1,0 +1,79 @@
+name: Build OpenWrt Firmware
+
+on:
+  watch:
+    types: [started]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dfh1949'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y build-essential ccache ecj fastjar file g++ gawk gettext git java-propose-classpath libncurses5-dev libncursesw5-dev libssl-dev python3 python3-distutils python3-setuptools python3-dev rsync subversion swig time unzip wget xsltproc zlib1g-dev $(curl -fsSL https://tinyurl.com/openwrt-depends)
+
+    - name: Clone OpenWrt source
+      run: |
+        git clone  https://github.com/immortalwrt/immortalwrt.git
+        cd imm
+
+    - name: Update and install feeds
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Apply custom diffconfig
+      run: |
+        cd openwrt
+        # 生成默认配置
+        make defconfig
+        # 应用 diffconfig
+        if [ -f ../diffconfig ]; then
+          cat ../diffconfig >> .config
+          make defconfig
+        fi
+
+    - name: Apply custom kernel config
+      run: |
+        cd imm
+        # 替换为你的 target，如 rockchip/armv8
+        if [ -f ../.kernel_config ]; then
+          cp ../.kconfig target/linux/rockchip/armv8/config-6.12
+        fi
+        # 验证内核配置（可选）
+        make kernel_menuconfig V=s
+
+    - name: Apply custom network config
+      run: |
+        cd imm
+        # 复制自定义 files 目录（包含 network 配置）
+        if [ -d ../files ]; then
+          cp -r ../files .
+        fi
+
+    - name: Download and prepare
+      run: |
+        cd imm
+        make download prepare -j$(nproc) V=s
+
+    - name: Compile firmware
+      run: |
+        cd imm
+        make -j$(nproc) V=s
+
+    - name: Upload firmware artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openwrt-firmware
+        path: imm/bin/targets/*/*.bin
+        retention-days: 30
