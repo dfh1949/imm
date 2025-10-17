@@ -94,8 +94,9 @@ jobs:
         # 新增：设置 wget 参数，重试机制解决连接失败
         export WGET_FLAGS="--tries=3 --timeout=30 --retry-connrefused --waitretry=5 --read-timeout=30"
         # 分离下载和 prepare，先下载（带 V=s 看日志），失败重试一次
-        make download V=s || make download V=s
-        make prepare -j$(nproc) V=s
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
 
     - name: 编译
       timeout-minutes: 180  # 新增：编译步骤超时 3 小时
