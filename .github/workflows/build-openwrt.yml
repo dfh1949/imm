@@ -31,27 +31,31 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-
-    - name: Apply custom diffconfig
+      
+    - name: 恢复配置文件
       run: |
         cd openwrt
-        # 生成默认配置
+        # 生成默认配置，确保基于目标设备
         make defconfig
-        # 应用 diffconfig
+        # 应用 diffconfig（包选择等）
         if [ -f ../diffconfig ]; then
-          cat ../diffconfig >> .config
-          make defconfig
+           cat ../diffconfig >> .config
+           make defconfig  # 再次展开，确保依赖完整
         fi
 
+    
     - name: Apply custom kernel config
       run: |
-        cd imm
+        cd openwrt
         # 替换为你的 target，如 rockchip/armv8
-        if [ -f ../.kernel_config ]; then
-          cp ../.kconfig target/linux/rockchip/armv8/config-6.12
+        if [ -f ../.kconfig ]; then
+          cp ../.kernel_config target/linux/rockchip/armv8/config-6.12
         fi
-        # 验证内核配置（可选）
-        make kernel_menuconfig V=s
+        # 验证 kernel config 是否应用（非交互式）
+        if [ -f target/linux/rockchip/armv8/config-6.12 ]; then
+          echo "Kernel config applied:"
+          head -n 10 target/linux/rockchip/armv8/config-6.12
+        fi
 
     - name: Apply custom network config
       run: |
