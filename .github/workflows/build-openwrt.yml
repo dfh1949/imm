@@ -34,9 +34,14 @@ jobs:
     # 步骤：安装编译所需依赖 (使用官方脚本)
     - name: 配置编译环境 (使用官方脚本)
       run: |
-        # 使用 ImmortalWrt 官方提供的初始化脚本 (方法2)
-        # 注意：此脚本通常会使用 sudo 安装依赖
-        bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
+        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+            bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+            g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
+            libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
+            libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
+            ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
+            python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
+            upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
 
     # 步骤：设置缓存以加速 ImmortalWrt 源码和下载的包
     - name: 设置 immortalwrt 源码缓存
