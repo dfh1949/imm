@@ -1,87 +1,168 @@
-name: 编译openwrt
+name: 编译 immortalwrt
 
 on:
+  # 监视仓库 star 操作（需要特定权限）
   watch:
     types: [started]
+  # 允许手动触发
   workflow_dispatch:
+    inputs:
+      # 添加一个输入参数，用于指定分支或标签
+      branch:
+        description: 'ImmortalWrt branch to build (default: master)'
+        required: false
+        default: 'master'
+      # 添加一个输入参数，用于指定目标子目录（如果需要）
+      target_subdir:
+        description: 'Target subdirectory (e.g., rockchip/armv8) - leave empty for default from defconfig'
+        required: false
+        default: ''
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # 使用最新的 Ubuntu 环境
+    # 限制只有特定用户可以触发
     if: github.actor == 'dfh1949'
 
     steps:
-    - name: Checkout repository
+    - name: 检出仓库代码
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        # 只获取最新的提交历史，减少下载量
+        fetch-depth: 1
 
-    - name: 配置环境
+    # 步骤：安装编译所需依赖 (使用官方脚本)
+    - name: 配置编译环境 (使用官方脚本)
       run: |
-        sudo apt-get update -y
-        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
-              bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
-              g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
-              libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
-              libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
-              ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
-              python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
-              upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
+        # 使用 ImmortalWrt 官方提供的初始化脚本 (方法2)
+        # 注意：此脚本通常会使用 sudo 安装依赖
+        bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
 
-    - name: Clone immortalwrt
+    # 步骤：设置缓存以加速 ImmortalWrt 源码和下载的包
+    - name: 设置 immortalwrt 源码缓存
+      uses: actions/cache@v4
+      id: source-cache
+      with:
+        path: |
+          imm/.git
+          imm/feeds
+        key: ${{ runner.os }}-immortalwrt-source-${{ inputs.branch }}
+        restore-keys: |
+          ${{ runner.os }}-immortalwrt-source-
+
+    # 步骤：克隆 ImmortalWrt 源码
+    - name: 克隆 immortalwrt 源码
       run: |
-        git clone  https://github.com/immortalwrt/immortalwrt.git
-        cd imm
+        if [ ! -d "imm/.git" ]; then
+          # 使用官方推荐的优化克隆命令
+          git clone -b ${{ inputs.branch }} --single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt.git imm
+        else
+          echo "Source directory exists, updating..."
+          cd imm
+          git fetch origin ${{ inputs.branch }}
+          git reset --hard origin/${{ inputs.branch }}
+          cd ..
+        fi
 
-    - name: 更新安装feed
+    # 步骤：更新和安装 feeds
+    - name: 更新和安装 feeds
       run: |
         cd imm
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-      
-    - name: 恢复配置文件
+
+    # 步骤：设置缓存以加速编译过程（ccache）
+    - name: 设置 ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ runner.os }}-immortalwrt-${{ inputs.branch }}
+        max-size: 400M # 根据需要调整缓存大小
+
+    # 步骤：恢复配置文件并应用自定义
+    - name: 应用配置文件
       run: |
         cd imm
-        # 生成默认配置，确保基于目标设备
+        # 生成默认配置，确保 .config 和目标平台结构存在
         make defconfig
-        # 应用 diffconfig（包选择等）
+
+        # 应用 diffconfig（如果存在）
         if [ -f ../diffconfig ]; then
-           cat ../diffconfig >> .config
-           make defconfig  # 再次展开，确保依赖完整
+          echo "Applying diffconfig..."
+          # 将 diffconfig 的内容追加到 .config
+          cat ../diffconfig >> .config
+          # 再次运行 defconfig 以确保所有依赖关系被正确处理
+          make defconfig
+        else
+          echo "无defconfig."
         fi
 
-    - name: 自定义配置
-      run: |
-        cd imm
-        # 复制自定义 files 目录（包含 network 配置）
+        # 复制自定义 files 目录（如果存在）
         if [ -d ../files ]; then
+          echo "复制文件"
           cp -r ../files .
+        else
+          echo "没有自定义文件."
         fi
 
-
-    - name: 更改内核配置
+    # 步骤：应用内核配置 (如果存在)
+    - name: 应用内核配置 (如果存在)
       run: |
         cd imm
-        # 生成默认配置，确保基于目标设备
+        # 确保 defconfig 已运行，生成基本的 .config 和目标平台结构
         make defconfig
-        # 应用 diffconfig（包选择等）
-        if [ -f ../config-6.12 ]; then
-           cat ../kconfig >> target/linux/rockchip/armv8/config-6.12
+
+        # 查找当前目标架构和子架构下最新的内核配置文件
+        # 通常位于 target/linux/$(ARCH)/$(SUBARCH)/config-*
+        # 例如: target/linux/rockchip/armv8/config-6.6
+        if [ -f ../kconfig ]; then
+          # 查找 target/linux/ 下所有 config-* 文件，并尝试匹配当前目标
+          # 这里使用一个更通用的 find 命令，并按名称排序，取最后一个（通常是最高版本）
+          # 注意：此方法在多架构/子架构匹配时可能不够精确，但对于单一目标通常有效
+          TARGET_KERNEL_CONFIG=$(find target/linux/ -name "config-*" -type f | sort | tail -n 1)
+          if [ -n "$TARGET_KERNEL_CONFIG" ]; then
+            echo "发现文件: $TARGET_KERNEL_CONFIG"
+            cat ../kconfig >> "$TARGET_KERNEL_CONFIG"
+          else
+            echo "Warning: 已经覆盖."
+          fi
+        else
+          echo "无内核文件."
         fi
-  
-    - name: 下载依赖
+
+    # 步骤：下载依赖源码
+    - name: 下载依赖源码
       run: |
         cd imm
+        # 使用 ccache 并行下载
         make download -j$(nproc) V=s
 
-    - name: 编译
+    # 步骤：执行编译
+    - name: 编译固件
       run: |
         cd imm
-        make -j$(nproc) V=s
+        # 启用 ccache 进行编译
+        export CCACHE_SLOPPINESS=time_macros,include_file_mtime,clang_index_store # 针对 Clang 可能需要
+        export CCACHE_BASEDIR="$PWD"
+        export CCACHE_CPP2=yes
+        # 编译，使用 ccache 和并行处理
+        make -j$(nproc) BUILD_LOG=1 V=s
 
-    - name: Upload firmware artifacts
+    # 步骤：上传编译产物
+    - name: 上传固件
       uses: actions/upload-artifact@v4
       with:
-        name: immortalwrt-firmware
-        path: imm/bin/targets/rockchip/armv8/*.img.gz
+        name: immortalwrt-firmware-${{ inputs.branch }}-${{ github.run_number }} # 包含分支和运行号以区分
+        path: |
+          imm/bin/targets/${{ inputs.target_subdir && format('*/{0}', inputs.target_subdir) || '**' }}/*.img.gz
+          imm/bin/targets/${{ inputs.target_subdir && format('*/{0}', inputs.target_subdir) || '**' }}/*.img
+          imm/bin/targets/${{ inputs.target_subdir && format('*/{0}', inputs.target_subdir) || '**' }}/*.buildinfo
+          imm/bin/targets/${{ inputs.target_subdir && format('*/{0}', inputs.target_subdir) || '**' }}/*.manifest
         retention-days: 30
+      if: success() # 仅在编译成功时上传
+
+    # 可选步骤：清理工作空间（如果需要）
+    - name: 清理工作空间
+      if: always() # 无论成功与否都执行
+      run: |
+         cd imm
+         make clean # 清理编译生成的文件，但保留下载的源码
