@@ -1,4 +1,4 @@
-name: Build OpenWrt Firmware
+name: 编译openwrt
 
 on:
   watch:
@@ -16,17 +16,24 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Setup dependencies
+    - name: 配置环境
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y build-essential ccache ecj fastjar file g++ gawk gettext git java-propose-classpath libncurses5-dev libncursesw5-dev libssl-dev python3 python3-distutils python3-setuptools python3-dev rsync subversion swig time unzip wget xsltproc zlib1g-dev $(curl -fsSL https://tinyurl.com/openwrt-depends)
+        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+              bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+              g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
+              libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
+              libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
+              ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
+              python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
+              upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
 
-    - name: Clone OpenWrt source
+    - name: Clone immortalwrt
       run: |
         git clone  https://github.com/immortalwrt/immortalwrt.git
         cd imm
 
-    - name: Update and install feeds
+    - name: 更新安装feed
       run: |
         cd openwrt
         ./scripts/feeds update -a
@@ -43,7 +50,7 @@ jobs:
            make defconfig  # 再次展开，确保依赖完整
         fi
 
-    - name: Apply custom network config
+    - name: 自定义配置
       run: |
         cd imm
         # 复制自定义 files 目录（包含 network 配置）
@@ -51,12 +58,12 @@ jobs:
           cp -r ../files .
         fi
 
-    - name: Download and prepare
+    - name: 下载依赖
       run: |
         cd imm
-        make download prepare -j$(nproc) V=s
+        make download -j$(nproc) V=s
 
-    - name: Compile firmware
+    - name: 编译
       run: |
         cd imm
         make -j$(nproc) V=s
@@ -64,6 +71,6 @@ jobs:
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: openwrt-firmware
-        path: imm/bin/targets/*/*.bin
+        name: immortalwrt-firmware
+        path: imm/bin/targets/rockchip/armv8/*.img.gz
         retention-days: 30
