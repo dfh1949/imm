@@ -78,6 +78,7 @@ jobs:
         make defconfig
         # 应用 diffconfig（包选择等）
         if [ -f ../diffconfig ]; then
+          echo "文件存在"
           cat ../diffconfig >> .config
           make defconfig  # 再次展开，确保依赖完整
         fi
@@ -85,13 +86,14 @@ jobs:
     - name: 复制内核文件
       run: |
         cd openwrt
-        # 替换为你的 target，如 ath79/generic
+        # 替换为你的 target
         if [ -f ../kconfig ]; then
+          echo "文件存在"
           cp ../kconfig target/linux/rockchip/armv8/config-6.12
         fi
         # 验证 kernel config 是否应用（非交互式）
         if [ -f target/linux/rockchip/armv8/config-6.12 ]; then
-          echo "Kernel config applied:"
+          echo "已覆盖"
           head -n 10 target/linux/rockchip/armv8/config-6.12
         fi
 
@@ -100,11 +102,12 @@ jobs:
         cd openwrt
         # 复制自定义 files 目录（包含网络配置）
         if [ -d ../files ]; then
+          echo "文件存在"
           cp -r ../files .
         fi
         # 验证 network config 是否应用
         if [ -f files/etc/config/network ]; then
-          echo "Network config applied:"
+          echo "文件覆盖"
           cat files/etc/config/network
         fi
 
@@ -125,11 +128,16 @@ jobs:
         cd openwrt
         make -j$(nproc) V=s
 
+
+    - name: 检测是否编译成功
+      run: |
+        ls openwrt/bin/target/linux/rockchip/armv8
+
     - name: 上传固件
       uses: actions/upload-artifact@v4
       with:
         name: openwrt-firmware
-        path: openwrt/bin/target/linux/rockchip/armv8/*.img.gz
+        path: openwrt/bin/target/linux/rockchip/armv8/*
         retention-days: 30
         
     # 可选步骤：清理工作空间（如果需要）
