@@ -107,7 +107,7 @@ jobs:
           cp ../config/diffconfig .config
           make defconfig
         else
-          echo "⚠️ 未找到 config/defconfig，使用默认配置"
+          echo "⚠️ 未找到 config/diffconfig，使用默认配置"
           make defconfig
         fi
 
