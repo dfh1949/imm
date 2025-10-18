@@ -107,7 +107,7 @@ jobs:
     - name: 检测是否编译成功
       run: |
         ls openwrt/bin/targets/rockchip/armv8
-        echo "编译完成"
+        echo "编译完成。"
 
     # 上传固件
     - name: 上传固件
