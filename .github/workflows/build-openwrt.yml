@@ -21,7 +21,7 @@ jobs:
       if: (!cancelled())
       run: df -hT
 
-    - name: 适当空间
+    - name: 释放空间
       uses: jlumbroso/free-disk-space@main
       with:
         tool-cache: false
@@ -60,10 +60,23 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-openwrt-feeds-
 
-    - name: Clone源码
+    - name: Clone OpenWrt source  # 修改：智能更新/克隆，利用缓存
       run: |
-        git clone --depth=1 --branch master https://github.com/immortalwrt/immortalwrt.git openwrt
-        cd openwrt
+        if [ -d openwrt ]; then
+          echo "openwrt 目录已存在（缓存恢复），尝试更新..."
+          cd openwrt
+          git fetch origin --depth=1
+          git checkout master --force  # 强制切换到 master
+          git pull origin master --ff-only --depth=1  # 浅拉取更新，无冲突
+          echo "更新完成"
+        else
+          echo "openwrt 目录不存在，进行克隆..."
+          git clone --depth=1 --branch master https://github.com/immortalwrt/immortalwrt.git openwrt
+          cd openwrt
+        fi
+        # 通用：验证分支
+        git --git-dir=.git --work-tree=. rev-parse --abbrev-ref HEAD | grep -q master || echo "警告：非 master 分支"
+
 
     - name: 更新安装feeds
       run: |
