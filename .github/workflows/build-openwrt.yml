@@ -69,14 +69,18 @@ jobs:
           git clean -fd
           git fetch origin --depth=1 master || {
             echo "fetch 失败，清理并重新克隆..."
-            cd .. && rm -rf openwrt
+            cd ../
+            ls
+            rm -rf openwrt
             git clone --depth=1 --branch master https://github.com/immortalwrt/immortalwrt.git openwrt
             cd openwrt
           }
           git checkout master --force
           git pull origin master --ff-only --depth=1 || {
             echo "pull 失败，清理并重新克隆..."
-            cd .. && rm -rf openwrt
+            cd ../
+            ls
+            rm -rf openwrt
             git clone --depth=1 --branch master https://github.com/immortalwrt/immortalwrt.git openwrt
             cd openwrt
           }
@@ -98,9 +102,9 @@ jobs:
       run: |
         cd openwrt
         echo "=============================="
-        if [ -f ../config/defconfig ]; then
+        if [ -f ../config/diffconfig ]; then
           echo "✅ 已找到 config/defconfig"
-          cp ../config/defconfig .config
+          cp ../config/diffconfig .config
           make defconfig
         else
           echo "⚠️ 未找到 config/defconfig，使用默认配置"
@@ -117,6 +121,7 @@ jobs:
 
     - name: 自定义配置文件
       run: |
+        ls -a
         cd openwrt
         if [ -d ../files ]; then
           echo "✅ 检测到 files 目录，已复制"
@@ -152,4 +157,4 @@ jobs:
       if: always()
       run: |
         cd openwrt
-        make clean
+        make dirclean
