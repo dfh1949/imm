@@ -52,7 +52,6 @@ CONFIG_NGINX_PCRE=y
 CONFIG_PACKAGE_attendedsysupgrade-common=y
 CONFIG_PACKAGE_avahi-autoipd=y
 CONFIG_PACKAGE_avahi-dbus-daemon=y
-CONFIG_PACKAGE_btop=y
 CONFIG_PACKAGE_cgi-io=y
 CONFIG_PACKAGE_dbus=y
 CONFIG_PACKAGE_kmod-crypto-authenc=y
