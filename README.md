@@ -1,1 +1,4 @@
-# imm
+R3S的immortalwrt固件自动编译
+产出固件为erofs和ext4格式
+内核大小128
+rootfs大小2048
