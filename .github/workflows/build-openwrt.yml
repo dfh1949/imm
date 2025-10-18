@@ -103,7 +103,7 @@ jobs:
         make defconfig
         # 应用 diffconfig（包选择等）
         if [ -f ../diffconfig ]; then
-          echo "文件存在"
+          echo "配置文件存在"
           cat ../diffconfig >> .config
           make defconfig  # 再次展开，确保依赖完整
         fi
@@ -113,12 +113,12 @@ jobs:
         cd openwrt
         # 替换为你的 target
         if [ -f ../kconfig ]; then
-          echo "文件存在"
+          echo "内核文件存在"
           cp ../kconfig target/linux/rockchip/armv8/config-6.12
         fi
         # 验证 kernel config 是否应用（非交互式）
         if [ -f target/linux/rockchip/armv8/config-6.12 ]; then
-          echo "已覆盖"
+          echo "文件存在"
           head -n 10 target/linux/rockchip/armv8/config-6.12
         fi
 
