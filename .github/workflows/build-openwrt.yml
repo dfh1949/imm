@@ -50,7 +50,7 @@ jobs:
 
     - name: Clone OpenWrt master
       run: |
-        git clone --depth=1 --branch master https://github.com/immortalwrt/immortalwrt.git openwrt
+        git clone -b master --single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt.git openwrt
         cd openwrt
         echo "当前分支: $(git rev-parse --abbrev-ref HEAD)"
 
@@ -101,7 +101,7 @@ jobs:
       timeout-minutes: 180
       run: |
         cd openwrt
-        make -j$(nproc) V=s
+        make -j4 V=s
 
     # 检测是否编译成功
     - name: 检测是否编译成功
@@ -110,9 +110,17 @@ jobs:
         echo "编译完成。"
 
     # 上传固件
-    - name: 上传固件
+    - name: 上传全部
       uses: actions/upload-artifact@v4
       with:
        name: openwrt-firmware
        path: openwrt/bin/targets/rockchip/armv8/*
+       retention-days: 30
+
+    # 上传固件
+    - name: 上传固件
+      uses: actions/upload-artifact@v4
+      with:
+       name: openwrt-bin
+       path: openwrt/bin/targets/rockchip/armv8/*.gz
        retention-days: 30
