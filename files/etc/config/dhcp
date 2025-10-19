@@ -1,4 +1,6 @@
-
+# ===========================
+# DNSMASQ（仅DNS功能）
+# ===========================
 config dnsmasq
 	option domainneeded '1'
 	option localise_queries '1'
@@ -7,33 +9,66 @@ config dnsmasq
 	option local '/lan/'
 	option domain 'lan'
 	option expandhosts '1'
-	option min_cache_ttl '3600'
-	option use_stale_cache '3600'
-	option cachesize '8000'
-	option nonegcache '1'
-	option authoritative '1'
+	option authoritative '0'
 	option readethers '1'
 	option leasefile '/tmp/dhcp.leases'
 	option resolvfile '/tmp/resolv.conf.d/resolv.conf.auto'
 	option localservice '1'
-	option dns_redirect '1'
+	option nonegcache '1'
+	option cachesize '8000'
+	option min_cache_ttl '3600'
+	option use_stale_cache '3600'
 	option ednspacket_max '1232'
-	option sequential_ip '1'
 
+	# 禁用 dnsmasq 的 DHCP 功能
+	option dhcp_disabled '1'
+
+
+# ===========================
+# LAN DHCP（由 odhcpd 提供）
+# ===========================
 config dhcp 'lan'
 	option interface 'lan'
 	option start '10'
 	option limit '150'
 	option leasetime '12h'
-	option dhcpv4 'server'
-	option max_preferred_lifetime '2700'
-	option max_valid_lifetime '5400'
-	option force '1'
 
+	# 指定使用 odhcpd 作为 DHCPv4 服务端
+	option dhcpv4 'server'
+
+	# IPv6 DHCP 与 RA 设置
+	option dhcpv6 'server'
+	option ra 'server'
+	option ra_management '1'
+	option ra_default '1'
+
+
+# ===========================
+# WAN DHCP（关闭）
+# ===========================
 config dhcp 'wan'
 	option interface 'wan'
 	option ignore '1'
 
+
+# ===========================
+# ODHCPD 全局配置
+# ===========================
+config odhcpd 'odhcpd'
+	# 主 DHCP 服务开关（接管 IPv4 + IPv6）
+	option maindhcp '1'
+
+	# DHCP 租约文件（odhcpd 自用）
+	option leasefile '/tmp/hosts/odhcpd'
+
+	# 触发脚本（用于动态更新 hosts）
+	option leasetrigger '/usr/sbin/odhcpd-update'
+
+	# 日志级别（0~7, 建议4）
+	option loglevel '4'
+
+	# 临时 PIO 目录（IPv6前缀信息）
+	option piofolder '/tmp/odhcpd-piofolder'
 config odhcpd 'odhcpd'
 	option maindhcp '0'
 	option leasefile '/tmp/hosts/odhcpd'
