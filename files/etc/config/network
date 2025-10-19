@@ -1,9 +1,7 @@
-
 config interface 'loopback'
 	option device 'lo'
 	option proto 'static'
-	option ipaddr '127.0.0.1'
-	option netmask '255.0.0.0'
+	list ipaddr '127.0.0.1/8'
 
 config globals 'globals'
 	option packet_steering '1'
@@ -14,14 +12,15 @@ config device
 	option type 'bridge'
 	list ports 'eth1'
 
+config device
+	option name 'eth1'
+	option macaddr '22:3b:f1:55:bb:05'
 
 config interface 'lan'
 	option device 'br-lan'
 	option proto 'static'
-	option ipaddr '10.0.1.1'
-	option netmask '255.255.255.0'
 	option ip6assign '60'
-
+	list ipaddr '10.0.1.1/24'
 
 config interface 'wan'
 	option device 'eth0'
@@ -33,4 +32,3 @@ config interface 'wan6'
 	option reqaddress 'try'
 	option reqprefix 'auto'
 	option norelease '1'
-
