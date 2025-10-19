@@ -12,10 +12,6 @@ config device
 	option type 'bridge'
 	list ports 'eth1'
 
-config device
-	option name 'eth1'
-	option macaddr '22:3b:f1:55:bb:05'
-
 config interface 'lan'
 	option device 'br-lan'
 	option proto 'static'
