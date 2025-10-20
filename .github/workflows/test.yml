@@ -1,5 +1,4 @@
-name: 编译immortalwrt
-
+name: 测试
 on:
   watch:
     types: [started]
@@ -13,7 +12,7 @@ jobs:
 
     steps:
     - name: 检出仓库
-      uses: actions/checkout@v4
+      uses: actions/checkout@latest
       with:
         fetch-depth: 0
 
