@@ -7,7 +7,7 @@ on:
 
 jobs:
   OpenWrt_Builder:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm64
     timeout-minutes: 360
     if: github.actor == 'dfh1949'
 
