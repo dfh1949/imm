@@ -54,8 +54,8 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds update -a
-        ./scripts/feeds install -a
-
+        ./scripts/feeds install -a  
+        
     - name: 检查并应用配置文件
       run: |
         cd openwrt
@@ -76,7 +76,17 @@ jobs:
           echo "⚠️ 未找到 config/kconfig，跳过内核配置"
         fi
         echo "=============================="
-
+        
+    - name: 配置toolchain
+      run: |
+        wget https://downloads.immortalwrt.org/snapshots/targets/rockchip/armv8/immortalwrt-toolchain-rockchip-armv8_gcc-14.3.0_musl.Linux-x86_64.tar.zst
+        tar -xf immortalwrt-tool*.tar.zst
+        rm immortalwrt-tool*.tar.zst
+        mv immortalwrt-tool* /opt/tools 
+        cd openwrt
+        ./scripts/ext-toolchain.sh --overwrite-config --toolchain /opt/tools/toolchain-aarch64_generic_gcc-14.3.0_musl --config rockchip/armv8 
+        sed -i '/CONFIG_BUILD_NLS=/d' .config
+        
     - name: 自定义配置文件
       run: |
         cd openwrt
