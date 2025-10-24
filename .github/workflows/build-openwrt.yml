@@ -45,10 +45,13 @@ jobs:
       run: df -hT
 
     - name: Clone OpenWrt master
-      run: |
-        git clone -b master --single-branch --filter=blob:none https://github.com/immortalwrt/immortalwrt.git openwrt
-        cd openwrt
-        echo "当前分支: $(git rev-parse --abbrev-ref HEAD)"
+      uses: actions/checkout@v4
+      with:
+       repository: immortalwrt/immortalwrt
+       ref: master
+       path: openwrt
+       fetch-depth: 1  # 或 1，根据需要
+       filter: blob:none
 
     - name: 更新安装feeds
       run: |
