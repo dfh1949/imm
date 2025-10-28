@@ -4,7 +4,7 @@ config interface 'loopback'
 	list ipaddr '127.0.0.1/8'
 
 config globals 'globals'
-	option packet_steering '1'
+	option packet_steering '2'
 	option steering_flows '128'
 
 config device
